@@ -12,6 +12,19 @@ function doGet() {
 }
 
 /**
+ * 接続テスト用の関数
+ * クライアントから呼び出せるかをテスト
+ */
+function testConnection() {
+  Logger.log('=== testConnection() 呼び出し成功 ===');
+  return {
+    success: true,
+    message: 'サーバーとの接続に成功しました！',
+    timestamp: new Date().toLocaleString('ja-JP')
+  };
+}
+
+/**
  * スプレッドシートからデータを取得
  * ステータスが「チェック済み」以外のデータのみ取得
  */

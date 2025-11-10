@@ -316,6 +316,11 @@
         <div class="loading">
           <div class="loading-spinner"></div>
           <div>データを読み込んでいます...</div>
+          <div style="margin-top: 20px;">
+            <button onclick="testConnection()" style="padding: 10px 20px; cursor: pointer; background: #1976d2; color: white; border: none; border-radius: 4px;">
+              接続テスト
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -363,6 +368,38 @@
       console.log('[INIT] ページ読み込み完了');
       loadData();
     };
+
+    // 接続テスト
+    function testConnection() {
+      console.log('[TEST] 接続テスト開始');
+      console.log('[TEST] google:', typeof google);
+      console.log('[TEST] google.script:', typeof google !== 'undefined' ? typeof google.script : 'undefined');
+      console.log('[TEST] google.script.run:', typeof google !== 'undefined' && google.script ? typeof google.script.run : 'undefined');
+
+      if (typeof google === 'undefined' || !google.script || !google.script.run) {
+        alert('エラー: google.script.runが利用できません。\n\nこのページをGASのデプロイURLで開いていますか？\nGASエディタの「テスト」ボタンではなく、デプロイした「ウェブアプリ」のURLで開いてください。');
+        console.error('[TEST] google.script.runが利用不可');
+        return;
+      }
+
+      try {
+        google.script.run
+          .withSuccessHandler(function(result) {
+            console.log('[TEST] 接続成功！', result);
+            alert('✅ 接続成功！\n\n' + result.message + '\n時刻: ' + result.timestamp + '\n\n次にデータ読み込みを試します...');
+            loadData();
+          })
+          .withFailureHandler(function(error) {
+            console.error('[TEST] 接続失敗', error);
+            alert('❌ 接続失敗\n\n' + error.message);
+          })
+          .testConnection();
+        console.log('[TEST] testConnection()呼び出し完了');
+      } catch (e) {
+        console.error('[TEST] 例外発生:', e);
+        alert('❌ エラー: ' + e.message);
+      }
+    }
 
     // データ読み込み
     function loadData() {
