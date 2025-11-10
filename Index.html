@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FAX受信データ検証システム</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f5f5f5;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .container {
+      display: flex;
+      height: 100vh;
+      gap: 0;
+    }
+
+    /* 左側：一覧 */
+    .list-panel {
+      width: 30%;
+      background-color: #ffffff;
+      border-right: 1px solid #e0e0e0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .list-header {
+      padding: 20px;
+      background-color: #1976d2;
+      color: white;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .list-header h1 {
+      font-size: 20px;
+      margin-bottom: 10px;
+    }
+
+    .list-count {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    .list-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px;
+    }
+
+    .list-item {
+      padding: 15px;
+      margin-bottom: 10px;
+      background-color: #f9f9f9;
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .list-item:hover {
+      background-color: #e3f2fd;
+      border-color: #1976d2;
+      transform: translateX(2px);
+    }
+
+    .list-item.selected {
+      background-color: #bbdefb;
+      border-color: #1976d2;
+      border-left: 4px solid #1976d2;
+    }
+
+    .list-item-date {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 5px;
+    }
+
+    .list-item-customer {
+      font-weight: bold;
+      margin-bottom: 5px;
+      font-size: 14px;
+    }
+
+    .list-item-destination {
+      font-size: 13px;
+      color: #444;
+      margin-bottom: 5px;
+    }
+
+    .list-item-status {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 3px;
+      font-size: 11px;
+      font-weight: bold;
+      margin-top: 5px;
+    }
+
+    .status-unchecked {
+      background-color: #fff3cd;
+      color: #856404;
+    }
+
+    .status-excluded {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+
+    .status-checked {
+      background-color: #d4edda;
+      color: #155724;
+    }
+
+    /* 中央：詳細 */
+    .detail-panel {
+      width: 35%;
+      background-color: #ffffff;
+      border-right: 1px solid #e0e0e0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .detail-header {
+      padding: 20px;
+      background-color: #f5f5f5;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    .detail-header h2 {
+      font-size: 18px;
+      color: #333;
+    }
+
+    .detail-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+    }
+
+    .detail-field {
+      margin-bottom: 20px;
+    }
+
+    .detail-label {
+      font-size: 12px;
+      color: #666;
+      font-weight: bold;
+      margin-bottom: 5px;
+      display: block;
+    }
+
+    .detail-value {
+      font-size: 14px;
+      color: #333;
+      padding: 10px;
+      background-color: #f9f9f9;
+      border-radius: 4px;
+      border: 1px solid #e0e0e0;
+      min-height: 40px;
+      word-wrap: break-word;
+    }
+
+    .detail-actions {
+      padding: 20px;
+      background-color: #f5f5f5;
+      border-top: 1px solid #e0e0e0;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn-excluded {
+      background-color: #dc3545;
+      color: white;
+    }
+
+    .btn-unchecked {
+      background-color: #ffc107;
+      color: #333;
+    }
+
+    .btn-checked {
+      background-color: #28a745;
+      color: white;
+    }
+
+    /* 右側：画像プレビュー */
+    .preview-panel {
+      width: 35%;
+      background-color: #2c2c2c;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .preview-header {
+      padding: 20px;
+      background-color: #1c1c1c;
+      color: white;
+      border-bottom: 1px solid #3c3c3c;
+    }
+
+    .preview-header h2 {
+      font-size: 18px;
+    }
+
+    .preview-content {
+      flex: 1;
+      overflow: auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .preview-image {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      border-radius: 4px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    }
+
+    .preview-placeholder {
+      color: #999;
+      text-align: center;
+      font-size: 16px;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+    }
+
+    .loading-spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #1976d2;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .error-message {
+      background-color: #f8d7da;
+      color: #721c24;
+      padding: 15px;
+      margin: 20px;
+      border-radius: 4px;
+      border: 1px solid #f5c6cb;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+    }
+
+    .empty-state-icon {
+      font-size: 48px;
+      margin-bottom: 20px;
+      opacity: 0.3;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- 左側：一覧 -->
+    <div class="list-panel">
+      <div class="list-header">
+        <h1>FAX受信データ</h1>
+        <div class="list-count" id="listCount">読み込み中...</div>
+      </div>
+      <div class="list-content" id="listContent">
+        <div class="loading">
+          <div class="loading-spinner"></div>
+          <div>データを読み込んでいます...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 中央：詳細 -->
+    <div class="detail-panel">
+      <div class="detail-header">
+        <h2>詳細情報</h2>
+      </div>
+      <div class="detail-content" id="detailContent">
+        <div class="empty-state">
+          <div class="empty-state-icon">📄</div>
+          <div>左の一覧からデータを選択してください</div>
+        </div>
+      </div>
+      <div class="detail-actions" id="detailActions" style="display: none;">
+        <div class="action-buttons">
+          <button class="btn btn-excluded" onclick="updateStatus('対象外')">対象外</button>
+          <button class="btn btn-unchecked" onclick="updateStatus('未チェック')">未チェック</button>
+          <button class="btn btn-checked" onclick="updateStatus('チェック済み')">チェック済み</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 右側：画像プレビュー -->
+    <div class="preview-panel">
+      <div class="preview-header">
+        <h2>画像プレビュー</h2>
+      </div>
+      <div class="preview-content" id="previewContent">
+        <div class="preview-placeholder">
+          <div style="font-size: 48px; margin-bottom: 20px; opacity: 0.3;">🖼️</div>
+          <div>画像なし</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let allData = [];
+    let selectedItem = null;
+
+    // 初期化
+    window.onload = function() {
+      loadData();
+    };
+
+    // データ読み込み
+    function loadData() {
+      google.script.run
+        .withSuccessHandler(onDataLoaded)
+        .withFailureHandler(onError)
+        .getData();
+    }
+
+    // データ読み込み成功
+    function onDataLoaded(data) {
+      allData = data;
+      displayList();
+    }
+
+    // データ読み込みエラー
+    function onError(error) {
+      document.getElementById('listContent').innerHTML = `
+        <div class="error-message">
+          <strong>エラー:</strong> ${error.message}
+        </div>
+      `;
+    }
+
+    // 一覧表示
+    function displayList() {
+      const listContent = document.getElementById('listContent');
+      const listCount = document.getElementById('listCount');
+
+      if (allData.length === 0) {
+        listContent.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">✅</div>
+            <div>確認待ちのデータはありません</div>
+          </div>
+        `;
+        listCount.textContent = '0件';
+        return;
+      }
+
+      listCount.textContent = `${allData.length}件`;
+
+      let html = '';
+      allData.forEach((item, index) => {
+        const statusClass = getStatusClass(item.status);
+        html += `
+          <div class="list-item" onclick="selectItem(${index})">
+            <div class="list-item-date">${escapeHtml(item.receivedDate)}</div>
+            <div class="list-item-customer">${escapeHtml(item.customerName)}</div>
+            <div class="list-item-destination">納入先: ${escapeHtml(item.deliveryDestination)}</div>
+            <div class="list-item-status ${statusClass}">${escapeHtml(item.status)}</div>
+          </div>
+        `;
+      });
+
+      listContent.innerHTML = html;
+    }
+
+    // アイテム選択
+    function selectItem(index) {
+      selectedItem = allData[index];
+
+      // 一覧のハイライト
+      const items = document.querySelectorAll('.list-item');
+      items.forEach((item, i) => {
+        if (i === index) {
+          item.classList.add('selected');
+        } else {
+          item.classList.remove('selected');
+        }
+      });
+
+      // 詳細表示
+      displayDetail();
+
+      // 画像プレビュー
+      displayPreview();
+    }
+
+    // 詳細表示
+    function displayDetail() {
+      if (!selectedItem) return;
+
+      const detailContent = document.getElementById('detailContent');
+      const detailActions = document.getElementById('detailActions');
+
+      detailContent.innerHTML = `
+        <div class="detail-field">
+          <label class="detail-label">受信日時</label>
+          <div class="detail-value">${escapeHtml(selectedItem.receivedDate)}</div>
+        </div>
+        <div class="detail-field">
+          <label class="detail-label">得意先名</label>
+          <div class="detail-value">${escapeHtml(selectedItem.customerName)}</div>
+        </div>
+        <div class="detail-field">
+          <label class="detail-label">納入先名</label>
+          <div class="detail-value">${escapeHtml(selectedItem.deliveryDestination)}</div>
+        </div>
+        <div class="detail-field">
+          <label class="detail-label">依頼主名</label>
+          <div class="detail-value">${escapeHtml(selectedItem.requester)}</div>
+        </div>
+        <div class="detail-field">
+          <label class="detail-label">納期</label>
+          <div class="detail-value">${escapeHtml(selectedItem.deliveryDate)}</div>
+        </div>
+        <div class="detail-field">
+          <label class="detail-label">商品名</label>
+          <div class="detail-value">${escapeHtml(selectedItem.productName)}</div>
+        </div>
+        <div class="detail-field">
+          <label class="detail-label">荷姿</label>
+          <div class="detail-value">${escapeHtml(selectedItem.packaging)}</div>
+        </div>
+        <div class="detail-field">
+          <label class="detail-label">数量</label>
+          <div class="detail-value">${escapeHtml(selectedItem.quantity)}</div>
+        </div>
+        <div class="detail-field">
+          <label class="detail-label">備考</label>
+          <div class="detail-value">${escapeHtml(selectedItem.remarks)}</div>
+        </div>
+        <div class="detail-field">
+          <label class="detail-label">ステータス</label>
+          <div class="detail-value">${escapeHtml(selectedItem.status)}</div>
+        </div>
+      `;
+
+      detailActions.style.display = 'block';
+    }
+
+    // 画像プレビュー
+    function displayPreview() {
+      if (!selectedItem) return;
+
+      const previewContent = document.getElementById('previewContent');
+
+      if (!selectedItem.imageUrl) {
+        previewContent.innerHTML = `
+          <div class="preview-placeholder">
+            <div style="font-size: 48px; margin-bottom: 20px; opacity: 0.3;">🖼️</div>
+            <div>画像なし</div>
+          </div>
+        `;
+        return;
+      }
+
+      // Google DriveのURLからファイルIDを抽出
+      const fileId = extractDriveFileId(selectedItem.imageUrl);
+
+      if (fileId) {
+        // Google Driveの画像をプレビュー可能な形式に変換
+        const previewUrl = `https://drive.google.com/thumbnail?id=${fileId}&sz=w1000`;
+        previewContent.innerHTML = `
+          <img src="${previewUrl}" alt="FAX画像" class="preview-image"
+               onerror="this.parentElement.innerHTML='<div class=\\'preview-placeholder\\'><div style=\\'font-size: 48px; margin-bottom: 20px; opacity: 0.3;\\'>⚠️</div><div>画像の読み込みに失敗しました</div></div>'">
+        `;
+      } else {
+        previewContent.innerHTML = `
+          <div class="preview-placeholder">
+            <div style="font-size: 48px; margin-bottom: 20px; opacity: 0.3;">⚠️</div>
+            <div>無効な画像URL</div>
+          </div>
+        `;
+      }
+    }
+
+    // ステータス更新
+    function updateStatus(newStatus) {
+      if (!selectedItem) return;
+
+      // ボタンを無効化
+      const buttons = document.querySelectorAll('.btn');
+      buttons.forEach(btn => btn.disabled = true);
+
+      google.script.run
+        .withSuccessHandler(function(result) {
+          // ステータス更新成功
+          selectedItem.status = newStatus;
+
+          // 「チェック済み」の場合は一覧から削除
+          if (newStatus === 'チェック済み') {
+            const index = allData.indexOf(selectedItem);
+            if (index > -1) {
+              allData.splice(index, 1);
+            }
+            selectedItem = null;
+            displayList();
+
+            // 詳細とプレビューをリセット
+            document.getElementById('detailContent').innerHTML = `
+              <div class="empty-state">
+                <div class="empty-state-icon">📄</div>
+                <div>左の一覧からデータを選択してください</div>
+              </div>
+            `;
+            document.getElementById('detailActions').style.display = 'none';
+            document.getElementById('previewContent').innerHTML = `
+              <div class="preview-placeholder">
+                <div style="font-size: 48px; margin-bottom: 20px; opacity: 0.3;">🖼️</div>
+                <div>画像なし</div>
+              </div>
+            `;
+          } else {
+            // それ以外のステータスの場合は表示を更新
+            displayList();
+            displayDetail();
+          }
+
+          // ボタンを再度有効化
+          buttons.forEach(btn => btn.disabled = false);
+        })
+        .withFailureHandler(function(error) {
+          alert('ステータスの更新に失敗しました: ' + error.message);
+          // ボタンを再度有効化
+          buttons.forEach(btn => btn.disabled = false);
+        })
+        .updateStatus(selectedItem.rowIndex, newStatus);
+    }
+
+    // Google DriveのファイルIDを抽出
+    function extractDriveFileId(url) {
+      if (!url) return '';
+      const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+      return match ? match[1] : '';
+    }
+
+    // ステータスのCSSクラスを取得
+    function getStatusClass(status) {
+      switch(status) {
+        case 'チェック済み':
+          return 'status-checked';
+        case '対象外':
+          return 'status-excluded';
+        case '未チェック':
+        default:
+          return 'status-unchecked';
+      }
+    }
+
+    // HTMLエスケープ
+    function escapeHtml(text) {
+      if (text === null || text === undefined) return '';
+      const div = document.createElement('div');
+      div.textContent = text.toString();
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>
