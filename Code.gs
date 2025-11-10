@@ -17,27 +17,43 @@ function doGet() {
  */
 function getData() {
   try {
+    Logger.log('=== getData() 開始 ===');
+    Logger.log('スプレッドシートID: ' + SPREADSHEET_ID);
+    Logger.log('シート名: ' + SHEET_NAME);
+
     const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    Logger.log('スプレッドシート取得成功');
+
     const sheet = ss.getSheetByName(SHEET_NAME);
+    Logger.log('シート取得結果: ' + (sheet ? '成功' : '失敗'));
 
     if (!sheet) {
+      Logger.log('エラー: シートが見つかりません');
       throw new Error('シート "' + SHEET_NAME + '" が見つかりません');
     }
 
     const lastRow = sheet.getLastRow();
+    Logger.log('最終行: ' + lastRow);
+
     if (lastRow <= 1) {
+      Logger.log('データなし（ヘッダー行のみ）');
       return []; // ヘッダー行のみまたはデータなし
     }
 
     // 全データを取得（A列からK列まで）
     const range = sheet.getRange(2, 1, lastRow - 1, 11);
+    Logger.log('取得範囲: A2:K' + lastRow);
+
     const values = range.getValues();
+    Logger.log('取得した行数: ' + values.length);
 
     // データを整形してフィルタリング
     const data = [];
     for (let i = 0; i < values.length; i++) {
       const row = values[i];
       const status = row[10] ? row[10].toString().trim() : ''; // K列（ステータス）
+
+      Logger.log('行' + (i + 2) + ': ステータス=' + status);
 
       // ステータスが「チェック済み」以外のデータのみ追加
       if (status !== 'チェック済み') {
@@ -58,6 +74,8 @@ function getData() {
       }
     }
 
+    Logger.log('フィルタ後のデータ件数: ' + data.length);
+
     // 受信日時の降順でソート
     data.sort((a, b) => {
       const dateA = new Date(a.receivedDate);
@@ -65,9 +83,15 @@ function getData() {
       return dateB - dateA; // 新しい順
     });
 
+    Logger.log('ソート完了');
+    Logger.log('=== getData() 正常終了 ===');
+
     return data;
 
   } catch (error) {
+    Logger.log('=== getData() エラー ===');
+    Logger.log('エラーメッセージ: ' + error.message);
+    Logger.log('エラースタック: ' + error.stack);
     console.error('データ取得エラー:', error);
     throw new Error('データの取得に失敗しました: ' + error.message);
   }
@@ -103,15 +127,22 @@ function formatDate(date) {
  */
 function updateStatus(rowIndex, newStatus) {
   try {
+    Logger.log('=== updateStatus() 開始 ===');
+    Logger.log('行番号: ' + rowIndex);
+    Logger.log('新しいステータス: ' + newStatus);
+
     const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
     const sheet = ss.getSheetByName(SHEET_NAME);
 
     if (!sheet) {
+      Logger.log('エラー: シートが見つかりません');
       throw new Error('シート "' + SHEET_NAME + '" が見つかりません');
     }
 
     // K列（11列目）のステータスを更新
     sheet.getRange(rowIndex, 11).setValue(newStatus);
+    Logger.log('ステータス更新成功');
+    Logger.log('=== updateStatus() 正常終了 ===');
 
     return {
       success: true,
@@ -119,6 +150,9 @@ function updateStatus(rowIndex, newStatus) {
     };
 
   } catch (error) {
+    Logger.log('=== updateStatus() エラー ===');
+    Logger.log('エラーメッセージ: ' + error.message);
+    Logger.log('エラースタック: ' + error.stack);
     console.error('ステータス更新エラー:', error);
     throw new Error('ステータスの更新に失敗しました: ' + error.message);
   }

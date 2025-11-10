@@ -360,38 +360,61 @@
 
     // 初期化
     window.onload = function() {
+      console.log('[INIT] ページ読み込み完了');
       loadData();
     };
 
     // データ読み込み
     function loadData() {
-      google.script.run
-        .withSuccessHandler(onDataLoaded)
-        .withFailureHandler(onError)
-        .getData();
+      console.log('[LOAD] データ読み込み開始');
+      console.log('[LOAD] google.script.run:', typeof google !== 'undefined' && google.script ? '利用可能' : '利用不可');
+
+      try {
+        google.script.run
+          .withSuccessHandler(onDataLoaded)
+          .withFailureHandler(onError)
+          .getData();
+        console.log('[LOAD] getData()呼び出し成功');
+      } catch (e) {
+        console.error('[LOAD] getData()呼び出しエラー:', e);
+        onError({ message: 'google.script.runの呼び出しに失敗しました: ' + e.message });
+      }
     }
 
     // データ読み込み成功
     function onDataLoaded(data) {
+      console.log('[SUCCESS] データ読み込み成功');
+      console.log('[SUCCESS] 受信データ件数:', data ? data.length : 0);
+      console.log('[SUCCESS] データ内容:', data);
+
       allData = data;
       displayList();
     }
 
     // データ読み込みエラー
     function onError(error) {
+      console.error('[ERROR] データ読み込みエラー');
+      console.error('[ERROR] エラー詳細:', error);
+      console.error('[ERROR] エラーメッセージ:', error.message);
+
       document.getElementById('listContent').innerHTML = `
         <div class="error-message">
-          <strong>エラー:</strong> ${error.message}
+          <strong>エラー:</strong> ${error.message}<br>
+          <small>詳細はブラウザのコンソール（F12キー）を確認してください</small>
         </div>
       `;
     }
 
     // 一覧表示
     function displayList() {
+      console.log('[DISPLAY] displayList() 開始');
+      console.log('[DISPLAY] allData件数:', allData.length);
+
       const listContent = document.getElementById('listContent');
       const listCount = document.getElementById('listCount');
 
       if (allData.length === 0) {
+        console.log('[DISPLAY] データなし - 空の状態を表示');
         listContent.innerHTML = `
           <div class="empty-state">
             <div class="empty-state-icon">✅</div>
@@ -403,6 +426,7 @@
       }
 
       listCount.textContent = `${allData.length}件`;
+      console.log('[DISPLAY] リスト項目を生成中...');
 
       let html = '';
       allData.forEach((item, index) => {
@@ -418,6 +442,7 @@
       });
 
       listContent.innerHTML = html;
+      console.log('[DISPLAY] displayList() 完了 - ' + allData.length + '件表示');
     }
 
     // アイテム選択
@@ -532,22 +557,35 @@
 
     // ステータス更新
     function updateStatus(newStatus) {
-      if (!selectedItem) return;
+      console.log('[UPDATE] updateStatus() 開始');
+      console.log('[UPDATE] 新しいステータス:', newStatus);
+      console.log('[UPDATE] 選択中のアイテム:', selectedItem);
+
+      if (!selectedItem) {
+        console.warn('[UPDATE] selectedItemが未選択');
+        return;
+      }
 
       // ボタンを無効化
       const buttons = document.querySelectorAll('.btn');
       buttons.forEach(btn => btn.disabled = true);
+      console.log('[UPDATE] ボタン無効化完了');
 
       google.script.run
         .withSuccessHandler(function(result) {
+          console.log('[UPDATE] ステータス更新成功');
+          console.log('[UPDATE] 結果:', result);
+
           // ステータス更新成功
           selectedItem.status = newStatus;
 
           // 「チェック済み」の場合は一覧から削除
           if (newStatus === 'チェック済み') {
+            console.log('[UPDATE] チェック済み - 一覧から削除');
             const index = allData.indexOf(selectedItem);
             if (index > -1) {
               allData.splice(index, 1);
+              console.log('[UPDATE] 削除完了 - インデックス:', index);
             }
             selectedItem = null;
             displayList();
@@ -567,6 +605,7 @@
               </div>
             `;
           } else {
+            console.log('[UPDATE] ステータス変更 - 表示を更新');
             // それ以外のステータスの場合は表示を更新
             displayList();
             displayDetail();
@@ -574,13 +613,18 @@
 
           // ボタンを再度有効化
           buttons.forEach(btn => btn.disabled = false);
+          console.log('[UPDATE] ボタン再有効化完了');
         })
         .withFailureHandler(function(error) {
+          console.error('[UPDATE] ステータス更新エラー');
+          console.error('[UPDATE] エラー詳細:', error);
           alert('ステータスの更新に失敗しました: ' + error.message);
           // ボタンを再度有効化
           buttons.forEach(btn => btn.disabled = false);
         })
         .updateStatus(selectedItem.rowIndex, newStatus);
+
+      console.log('[UPDATE] updateStatus()呼び出し完了 - 行番号:', selectedItem.rowIndex);
     }
 
     // Google DriveのファイルIDを抽出
